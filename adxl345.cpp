@@ -38,7 +38,7 @@ void ADXL345::initialiseTheSensor(){
 
 void ADXL345::measure(string measurementIdentifier){
 
-    unsigned int steps = 100;
+    unsigned int steps = 1000;
 
     char data[7];
     int bytes;

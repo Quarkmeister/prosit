@@ -8,9 +8,9 @@ using std::string;
 
 class ADXL345 : SPISensor{
     public:
-        ADXL345(string identifier, TimeLineStorage* timeLineStorage, int spiChannel);
+        ADXL345(string identifier, TimeLineStorage* timeLineStorage, unsigned int maxSamplingFrequenzy, int spiChannel);
 
-        void measure(string measurementIdentifier) override;
+        void measure(std::__cxx11::string measurementIdentifier) override;
     
     private:
         void initialiseTheSensor();

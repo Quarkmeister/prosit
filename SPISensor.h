@@ -6,7 +6,7 @@
 class SPISensor : protected Sensor
 {
     public:
-        SPISensor(string identifier, TimeLineStorage* timeLineStorage, int spiChannel);
+        SPISensor(string identifier, TimeLineStorage* timeLineStorage, unsigned int maxSamplingFrequenzy, int spiChannel);
        ~SPISensor(); 
 
     protected:

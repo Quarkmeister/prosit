@@ -4,6 +4,8 @@
 #include <string.h>
 using std::string;
 #include <map>
+#include <thread>
+#include <vector>
 
 #include "timelineStorage.h"
 #include "influxdb-cpp-2/influxdb.hpp"
@@ -12,8 +14,9 @@ class InfluxDBStorage : protected TimeLineStorage
 {
     public:
         InfluxDBStorage(string organisationName, std::string bucket, std::string token, std::string tags);
+       ~InfluxDBStorage(); 
 
-        void store(const std::string& measurementName, const std::map<string, string>& tags, const std::map<string, string>& fields) override;
+        void store(const std::__cxx11::string& measurementName, const std::map<string, string>& tags, const std::map<string, string>& fields) override;
 
     private:
         std::string _organisationName;
@@ -23,6 +26,11 @@ class InfluxDBStorage : protected TimeLineStorage
 
         influxdb_cpp::server_info serverInfo;
         std::string writeCommand;
+
+        influxdb_cpp::builder builder;
+        unsigned long builderEntries;
+        static void transmittBuffer(influxdb_cpp::builder builder, influxdb_cpp::server_info serverInfo);
+        std::vector<std::thread> threads;
 };
 
 #endif

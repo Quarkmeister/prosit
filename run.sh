@@ -5,4 +5,4 @@ rm *.o
 g++ -c *.cpp
 g++ -o main.exe *.o -lpigpio -lrt -lpthread
 
-./main.exe
+nice --15 ./main.exe

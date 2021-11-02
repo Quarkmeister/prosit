@@ -17,7 +17,8 @@ using std::string;
 #define DATA_FORMAT_VALUE   0x0B
 
 
-ADXL345::ADXL345(string identifier, TimeLineStorage* timeLineStorage, int spiChannel) : SPISensor(identifier, timeLineStorage, spiChannel) {
+ADXL345::ADXL345(string identifier, TimeLineStorage* timeLineStorage, unsigned int maxSamplingFrequenzy, int spiChannel) 
+: SPISensor(identifier, timeLineStorage, maxSamplingFrequenzy, spiChannel) {
     initialiseTheSensor();
 
     accelerationConversionFactor = 2 * 16.0 / 8192.0;
@@ -36,8 +37,8 @@ void ADXL345::initialiseTheSensor(){
     sendBytes(data, 2);
 } 
 
-void ADXL345::measure(string measurementIdentifier){
-
+void ADXL345::measure(std::__cxx11::string measurementIdentifier){
+    
     unsigned int steps = 1000;
 
     char data[7];
@@ -59,6 +60,7 @@ void ADXL345::measure(string measurementIdentifier){
         fields["a_z"] = std::to_string(z * accelerationConversionFactor);
 
         _timeLineStorage->store(measurementIdentifier, tags, fields);
+        Sensor::measure(measurementIdentifier);
     }
     
 }

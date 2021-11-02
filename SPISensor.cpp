@@ -6,6 +6,7 @@ extern "C" void gpioTerminate(void);
 extern "C" int spiOpen(unsigned spiChan, unsigned baud, unsigned spiFlags);
 extern "C" int spiWrite(unsigned handle, char *buf, unsigned count);
 extern "C" int spiXfer(unsigned handle, char *txBuf, char *rxBuf, unsigned count);
+#include <iostream>
 
 // local includes
 #include "SPISensor.h"
@@ -22,8 +23,10 @@ const int SPI_SPEED = 2'000'000; // Bauds = Symbols per second
 bool SPISensor::gpioIsInitialized = false;
 int SPISensor::amountOfInstanzes = 0;
 
-SPISensor::SPISensor(string identifier, TimeLineStorage* timeLineStorage, int spiChannel) : Sensor(identifier, timeLineStorage){
+SPISensor::SPISensor(string identifier, TimeLineStorage* timeLineStorage, unsigned int maxSamplingFrequenzy, int spiChannel) 
+: Sensor(identifier, timeLineStorage, maxSamplingFrequenzy){
     _spiChannel = spiChannel;
+    std::cout << "SPI-Channel: " << spiChannel << std::endl;
 
     // Initialize the GPIO library
     if (!gpioIsInitialized)

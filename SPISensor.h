@@ -3,7 +3,7 @@
 
 #include "sensor.h"
 
-class SPISensor : protected Sensor
+class SPISensor : public Sensor
 {
     public:
         SPISensor(string identifier, TimeLineStorage* timeLineStorage, unsigned int maxSamplingFrequenzy, int spiChannel);

@@ -12,16 +12,17 @@ class Sensor{
     public :
         Sensor(string identifier, TimeLineStorage* timeLineStorage, unsigned int maxSamplingFrequenzy);
 
-        virtual void measure(string measurementIdentifier);
+        void measure(string measurementIdentifier);
 
     protected:
+        virtual void specificMeasure(string measurementIdentifier, std::chrono::_V2::system_clock::time_point now) = 0;
+    
         TimeLineStorage* _timeLineStorage;
         std::map<string, string> tags;
 
     private:
         double maxSamplingPeriod; //[ns]
         std::chrono::_V2::system_clock::time_point timeOfLastMeasure;
-        std::chrono::_V2::system_clock::time_point now();
 };
 
 #endif

@@ -9,6 +9,7 @@ const unsigned long builderEntriesBufferLength = 100;
 
 InfluxDBStorage::InfluxDBStorage(std::string organisationName, std::string bucket, std::string token, std::string tags) 
 : serverInfo("127.0.0.1", 8086, organisationName, token, bucket), builder{}, threads{} {
+
     _organisationName = organisationName;
     _bucket = bucket;
     _token = token;
@@ -18,20 +19,15 @@ InfluxDBStorage::InfluxDBStorage(std::string organisationName, std::string bucke
 
     builderEntries = 0;
 }
+
 InfluxDBStorage::~InfluxDBStorage(){
 
-    // std::cout << "Threads will be deleted" << std::endl;
-    // for(auto &thread: threads){
-    //     if(thread.joinable())
-    //         thread.join();
-    // }
     ((influxdb_cpp::detail::field_caller*)&builder)->post_http(serverInfo);
-
 } 
 
-void InfluxDBStorage::store(const std::__cxx11::string& measurementName, const std::map<string, string>& tags, const std::map<string, string>& fields){
+void InfluxDBStorage::store(const std::__cxx11::string& measurementName, const std::map<string, string>& tags, const std::map<string, string>& fields, std::chrono::_V2::system_clock::time_point timePoint){
 
-    unsigned long long timestamp = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::time_point_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now()).time_since_epoch()).count();
+    unsigned long long timestamp = std::chrono::duration_cast<std::chrono::nanoseconds>(timePoint.time_since_epoch()).count();
 
     auto tagsIterator = tags.rbegin();
     auto fieldsIterator = fields.rbegin();
@@ -60,22 +56,4 @@ void InfluxDBStorage::store(const std::__cxx11::string& measurementName, const s
         }
     }
     fieldCaller->timestamp(timestamp);
-
-    // if(++builderEntries > builderEntriesBufferLength){
-        
-    //     auto thread = std::thread{InfluxDBStorage::transmittBuffer, builder, serverInfo};
-    //     threads.push_back(thread);
-    //     thread.detach();
-
-    //     builder = influxdb_cpp::builder();
-    // }
 }
-void InfluxDBStorage::transmittBuffer(influxdb_cpp::builder builder, influxdb_cpp::server_info serverInfo){
-
-    std::string response;
-
-    ((influxdb_cpp::detail::field_caller*)&builder)->post_http(serverInfo, &response);
-
-    std::cout << "Response: " << response << std::endl;
-
-} 

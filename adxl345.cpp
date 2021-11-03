@@ -3,6 +3,7 @@
 using std::string;
 #include <cmath>
 
+
 #include "adxl345.h"
 
 // Power consumption Settings
@@ -37,30 +38,23 @@ void ADXL345::initialiseTheSensor(){
     sendBytes(data, 2);
 } 
 
-void ADXL345::measure(std::__cxx11::string measurementIdentifier){
+void ADXL345::specificMeasure(string measurementIdentifier, std::chrono::_V2::system_clock::time_point now){
     
-    unsigned int steps = 1000;
-
     char data[7];
     int bytes;
-    
-    for (unsigned int i = 0; i < steps; ++i)
-    {
-        data[0] = 0x32;
-        bytes = transceiveBytes(data, 7);
-        int16_t x, y, z;
-        x = (data[2]<<8)|data[1];
-        y = (data[4]<<8)|data[3];
-        z = (data[6]<<8)|data[5];
 
-        std::map<string, string> fields;
+    data[0] = 0x32;
+    bytes = transceiveBytes(data, 7);
+    int16_t x, y, z;
+    x = (data[2] << 8) | data[1];
+    y = (data[4] << 8) | data[3];
+    z = (data[6] << 8) | data[5];
 
-        fields["a_x"] = std::to_string(x * accelerationConversionFactor);
-        fields["a_y"] = std::to_string(y * accelerationConversionFactor);
-        fields["a_z"] = std::to_string(z * accelerationConversionFactor);
+    std::map<string, string> fields;
 
-        _timeLineStorage->store(measurementIdentifier, tags, fields);
-        Sensor::measure(measurementIdentifier);
-    }
-    
+    fields["a_x"] = std::to_string(x * accelerationConversionFactor);
+    fields["a_y"] = std::to_string(y * accelerationConversionFactor);
+    fields["a_z"] = std::to_string(z * accelerationConversionFactor);
+
+    _timeLineStorage->store(measurementIdentifier, tags, fields, now);
 }

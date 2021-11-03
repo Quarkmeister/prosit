@@ -1,5 +1,11 @@
 #include "sensor.h"
 
+#include <iostream>
+using std::chrono::time_point_cast;
+using std::chrono::duration_cast;
+using std::chrono::high_resolution_clock;
+using std::chrono::nanoseconds;
+
 Sensor::Sensor(string identifier, TimeLineStorage* timeLineStorage, unsigned int maxSamplingFrequenzy){
     _timeLineStorage = timeLineStorage;
 
@@ -10,13 +16,13 @@ Sensor::Sensor(string identifier, TimeLineStorage* timeLineStorage, unsigned int
 }
 
 void Sensor::measure(string measurementIdentifier){
+
+    auto timePointNow = std::chrono::time_point_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now());
     
-    while(std::chrono::duration_cast<std::chrono::nanoseconds>(now()-timeOfLastMeasure).count() < maxSamplingPeriod){}
+    if(duration_cast<nanoseconds>(timePointNow-timeOfLastMeasure).count() > maxSamplingPeriod){
 
-    timeOfLastMeasure = std::chrono::time_point_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now());
+        timeOfLastMeasure = time_point_cast<nanoseconds>(std::chrono::high_resolution_clock::now());
 
+        this->specificMeasure(measurementIdentifier, timePointNow);
+    }
 }
-
- std::chrono::_V2::system_clock::time_point Sensor::now(){
-     return std::chrono::time_point_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now());
- } 

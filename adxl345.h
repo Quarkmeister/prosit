@@ -2,16 +2,18 @@
 #define ADXL345asdfasdf
 
 #include <map>
+#include <chrono>
 using std::string;
 
 #include "SPISensor.h"
 
-class ADXL345 : SPISensor{
+class ADXL345 : public SPISensor{
     public:
         ADXL345(string identifier, TimeLineStorage* timeLineStorage, unsigned int maxSamplingFrequenzy, int spiChannel);
 
-        void measure(std::__cxx11::string measurementIdentifier) override;
-    
+    protected:
+        void specificMeasure(string measurementIdentifier, std::chrono::_V2::system_clock::time_point now) override;
+
     private:
         void initialiseTheSensor();
 

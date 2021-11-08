@@ -17,6 +17,7 @@ class InfluxDBStorage : protected TimeLineStorage
         InfluxDBStorage(string organisationName, std::string bucket, std::string token, std::string tags);
        ~InfluxDBStorage(); 
 
+        void store(const std::__cxx11::string& measurementName, const string& fieldName, const string& fieldValue);
         void store(const std::__cxx11::string& measurementName, const std::map<string, string>& tags, const std::map<string, string>& fields, std::chrono::_V2::system_clock::time_point timePoint) override;
 
     private:

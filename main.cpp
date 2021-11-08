@@ -1,5 +1,6 @@
 #include <iostream>
 #include <string>
+using std::string;
 #include <ctime>
 #include <sys/time.h>
 #include "adxl345.h"
@@ -14,14 +15,15 @@ namespace po = boost::program_options;
 using std::chrono::time_point_cast;
 using std::chrono::seconds;
 
-bool process_command_line(int argc, char** argv, float& timeSpan);
+bool process_command_line(int argc, char** argv, float& timeSpan, string& message);
 
 int main(int argc, char *argv[]){
 
     // Get the sample Time as an input from the command line
     float sampleTime;
+    string message;
 
-    bool result = process_command_line(argc, argv, sampleTime);
+    bool result = process_command_line(argc, argv, sampleTime, message);
     if (!result)
         return 1;
 
@@ -42,6 +44,10 @@ int main(int argc, char *argv[]){
     auto measurementIdentifier = (std::__cxx11::string)ss.str();
     std::cout << "Measurement: " << measurementIdentifier << std::endl;
 
+    // Save the command line message
+    if(!message.empty()){
+        storage.store(measurementIdentifier, "Modus", message);
+    } 
 
     // Measuring procedure
     const clock_t begin_time = clock();
@@ -50,16 +56,23 @@ int main(int argc, char *argv[]){
         lba.measure(measurementIdentifier);
 
     }
+
+    storage.~InfluxDBStorage();
+
+    string pdToCSV_FNE = "./PDToCsv.py";
+    string pdToCSV_cmd = "python3 " + pdToCSV_FNE + " '" + measurementIdentifier + "%" + message + "'";
+    system(pdToCSV_cmd.c_str());
 }
 
-bool process_command_line(int argc, char** argv, float& timeSpan){
+bool process_command_line(int argc, char** argv, float& timeSpan, string& message){
 
     try
     {
         po::options_description desc{"Options"};
         desc.add_options()
-          ("help,h",     "produce help message")
-          ("time-span,t",   po::value<float>(&timeSpan)->required(),      "Set the sample time span in seconds")
+          ("help,h",                                                "produce help message")
+          ("time-span,t", po::value<float>(&timeSpan)->required(),  "Set the sample time span in seconds")
+          ("message,m",   po::value<string>(&message),              "Saves the message in the timelineStorage (for descriptions, etc.)")
         ;
 
         po::variables_map vm;

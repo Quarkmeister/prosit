@@ -1,8 +1,12 @@
 #include <stdexcept>
 #include <chrono>
+#include <cmath>
+#include <iostream>
 
 #include "influxdbstorage.h"
 using std::string;
+using std::chrono::duration_cast;
+using std::chrono::nanoseconds;
 
 const unsigned long builderEntriesBufferLength = 100;
 
@@ -22,7 +26,16 @@ InfluxDBStorage::InfluxDBStorage(std::string organisationName, std::string bucke
 
 InfluxDBStorage::~InfluxDBStorage(){
 
+    auto timestamp = std::chrono::time_point_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now());
+
     ((influxdb_cpp::detail::field_caller*)&builder)->post_http(serverInfo);
+
+    auto end = std::chrono::time_point_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now());
+
+    auto duration = duration_cast<nanoseconds>(end-timestamp).count();
+    double seconds = duration * std::pow(10.0, -9.0);
+
+    std::cout << "Schreibfrequenz: " << builderEntries / seconds << std::endl;
 } 
 
 void InfluxDBStorage::store(const std::__cxx11::string& measurementName, const std::map<string, string>& tags, const std::map<string, string>& fields, std::chrono::_V2::system_clock::time_point timePoint){
@@ -57,3 +70,15 @@ void InfluxDBStorage::store(const std::__cxx11::string& measurementName, const s
     }
     fieldCaller->timestamp(timestamp);
 }
+
+void InfluxDBStorage::store(const std::__cxx11::string& measurementName, const string& fieldName, const string& fieldValue){
+
+    std::map<string, string> tag;
+
+    std::map<string, string> field;
+    field[fieldName]  = fieldValue;
+
+    auto timePointNow = std::chrono::time_point_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now());
+
+    this->store(measurementName, tag, field, timePointNow);
+} 

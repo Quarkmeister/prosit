@@ -1,7 +1,7 @@
 # Other git libraries________________________________________________________
 adxl345spi/
 pigpio-master/
-influxdb-cpp-2/
+# influxdb-cpp-2/
 
 # C++________________________________________________________________________
 # Prerequisites

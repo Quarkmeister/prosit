@@ -5,6 +5,7 @@
 using std::string;
 #include <map>
 #include <thread>
+#include <future>
 #include <vector>
 #include <chrono>
 
@@ -16,22 +17,21 @@ class InfluxDBStorage : protected TimeLineStorage
     public:
         InfluxDBStorage(string organisationName, std::string bucket, std::string token, std::string tags);
        ~InfluxDBStorage(); 
-
-        void store(const std::__cxx11::string& measurementName, const string& fieldName, const string& fieldValue);
-        void store(const std::__cxx11::string& measurementName, const std::map<string, string>& tags, const std::map<string, string>& fields, std::chrono::_V2::system_clock::time_point timePoint) override;
+        
+       // Both store functions work asynchron.
+       void store(const std::__cxx11::string& measurementName, const string& fieldName, const string& fieldValue);
+       void store(const std::__cxx11::string& measurementName, const std::map<string, string>& tags, const std::map<string, string>& fields, std::chrono::_V2::system_clock::time_point timePoint) override;
 
     private:
-        std::string _organisationName;
-        std::string _bucket;
-        std::string _token;
-        std::string _tags;
-
         influxdb_cpp::server_info serverInfo;
-        std::string writeCommand;
 
-        influxdb_cpp::builder builder;
-        unsigned long builderEntries;
-        std::vector<std::thread> threads;
+        influxdb_cpp::builder* builder_work;
+        influxdb_cpp::builder* builder_store;
+        bool builderInitialised;
+        void renewBuilderWork();
+
+        std::future<void> storeThread;
+        void pushData(influxdb_cpp::builder* builder, bool deleteBuilder = false);
 };
 
 #endif

@@ -1,74 +1,39 @@
 #include <stdexcept>
 #include <chrono>
-#include <cmath>
-#include <iostream>
-
-#include "influxdbstorage.h"
-using std::string;
 using std::chrono::duration_cast;
 using std::chrono::nanoseconds;
+#include <cmath>
+#include <iostream>
+#include <string>
+using std::string;
 
-const unsigned long builderEntriesBufferLength = 100;
+#include "influxdbstorage.h"
 
-
-InfluxDBStorage::InfluxDBStorage(std::string organisationName, std::string bucket, std::string token, std::string tags) 
-: serverInfo("127.0.0.1", 8086, organisationName, token, bucket), builder{}, threads{} {
-
-    _organisationName = organisationName;
-    _bucket = bucket;
-    _token = token;
-    _tags = tags;
-
-    writeCommand = "influx write -o " + _organisationName + " -b " + _bucket + " -t " + _token;
+InfluxDBStorage::InfluxDBStorage(string organisationName, string bucket, string token, string tags) 
+    : serverInfo("127.0.0.1", 8086, organisationName, token, bucket), builder{}, threads{}, storeThread{}{
 
     builderEntries = 0;
+
+    builder_work = new influxdb_cpp::builder{};
+    builderInitialised = false;
 }
 
 InfluxDBStorage::~InfluxDBStorage(){
 
-    auto timestamp = std::chrono::time_point_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now());
+    try {
+        // Waits till the thread finishes
+        storeThread.get();
 
-    ((influxdb_cpp::detail::field_caller*)&builder)->post_http(serverInfo);
-
-    auto end = std::chrono::time_point_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now());
-
-    auto duration = duration_cast<nanoseconds>(end-timestamp).count();
-    double seconds = duration * std::pow(10.0, -9.0);
-
-    std::cout << "Schreibfrequenz: " << builderEntries / seconds << std::endl;
-} 
-
-void InfluxDBStorage::store(const std::__cxx11::string& measurementName, const std::map<string, string>& tags, const std::map<string, string>& fields, std::chrono::_V2::system_clock::time_point timePoint){
-
-    unsigned long long timestamp = std::chrono::duration_cast<std::chrono::nanoseconds>(timePoint.time_since_epoch()).count();
-
-    auto tagsIterator = tags.rbegin();
-    auto fieldsIterator = fields.rbegin();
-
-    influxdb_cpp::detail::tag_caller* tagCaller;    
-    if(builderEntries++ == 0)
-        tagCaller = &((&builder)->meas(measurementName));
-    else{
-        tagCaller = &(((influxdb_cpp::detail::field_caller*)(&builder))->meas(measurementName));
-    } 
-
-    for (auto it = tags.begin(); it != tags.end(); it++)
-    {
-        tagCaller->tag(it->first, it->second);
+        // Push the unstored Data
+        pushData(builder_work);
     }
+    finally {
+        delete builder_work;
+        builder_work = nullptr;
 
-    influxdb_cpp::detail::field_caller* fieldCaller;
-    bool firstRun = true;
-    for(auto it = fields.begin(); it != fields.end(); ++it){
-        if(firstRun){
-            fieldCaller = &tagCaller->field(it->first, it-> second);
-            firstRun = false;
-        }
-        else{
-            fieldCaller->field(it->first, it->second);
-        }
+        delete builder_store;
+        builder_store = nullptr;
     }
-    fieldCaller->timestamp(timestamp);
 }
 
 void InfluxDBStorage::store(const std::__cxx11::string& measurementName, const string& fieldName, const string& fieldValue){
@@ -80,5 +45,73 @@ void InfluxDBStorage::store(const std::__cxx11::string& measurementName, const s
 
     auto timePointNow = std::chrono::time_point_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now());
 
+    // garantees a polymorphic call
     this->store(measurementName, tag, field, timePointNow);
 } 
+
+void InfluxDBStorage::store(const std::__cxx11::string& measurementName, const std::map<string, string>& tags, const std::map<string, string>& fields, std::chrono::_V2::system_clock::time_point timePoint) {
+    
+    // Converts the timepoint parameter to a unix timestamp
+    unsigned long long timestamp = duration_cast<nanoseconds>(timePoint.time_since_epoch()).count();
+
+    // Sets the measurement value
+    influxdb_cpp::detail::tag_caller* tagCaller;
+    if (!builderInitialised) {
+
+        // This steps garuantees with polymorphy, that a new batch write is started.
+        tagCaller = &((builder_work)->meas(measurementName));
+        builderInitialised = true;
+    }
+    else {
+        tagCaller = &(((influxdb_cpp::detail::field_caller*)(builder_work))->meas(measurementName));
+    }
+
+    // Sets the tag values
+    for (auto it = tags.begin(); it != tags.end(); it++)
+    {
+        tagCaller->tag(it->first, it->second);
+    }
+
+    // Sets the field values
+    influxdb_cpp::detail::field_caller* fieldCaller;
+    bool firstRun = true;
+    for (auto it = fields.begin(); it != fields.end(); ++it) {
+        if (firstRun) {
+            fieldCaller = &tagCaller->field(it->first, it->second);
+            firstRun = false;
+        }
+        else {
+            fieldCaller->field(it->first, it->second);
+        }
+    }
+
+    // Sets a timestamp. This is important because of the batch writing. Otherwise all measurement points will get the same timepoint
+    // from the database routines.
+    fieldCaller->timestamp(timestamp);
+
+    // Check if the store thread finished it´s work. If it´s finished a new thread is initalized and a new builder_work 
+    // is been created.
+    if (storeThread._Is_ready()) {
+
+        builder_store = builder_work;
+        renewBuilderWork();
+
+        // std::launch::async   : The thread starts immideatly
+        // std::ref             : The parameters would be copied otherwise
+        // true                 : The 'builder_store' pointer will be deleted from the thread after function run
+        storeThread = std::async(std::launch::async, pushData, std::ref(builder_store), true);
+    }
+}
+
+void InfluxDBStorage::pushData(influxdb_cpp::builder* builder, bool deleteBuilder = false) {
+
+    ((influxdb_cpp::detail::field_caller*)&builder)->post_http(serverInfo);
+
+    if (deleteBuilder)
+        delete builder;
+}
+
+void InfluxDBStorage::renewBuilderWork() {
+    builder_work = new influxdb_cpp::builder{};
+    builderInitialised = false;
+}

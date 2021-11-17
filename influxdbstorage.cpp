@@ -113,7 +113,7 @@ void InfluxDBStorage::pushData(influxdb_cpp::server_info& serverInfo, influxdb_c
     ((influxdb_cpp::detail::field_caller*)&builder)->post_http(serverInfo);
 
     if (deleteBuilder)
-        delete builder;
+        delete &builder;
 }
 
 void InfluxDBStorage::renewBuilderWork() {

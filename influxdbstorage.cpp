@@ -108,7 +108,7 @@ void InfluxDBStorage::store(const std::__cxx11::string& measurementName, const s
     }
 }
 
-void InfluxDBStorage::pushData(influxdb_cpp::server_info serverInfo, influxdb_cpp::builder* builder) {
+void InfluxDBStorage::pushData(influxdb_cpp::server_info& serverInfo, influxdb_cpp::builder& builder) {
 
     ((influxdb_cpp::detail::field_caller*)&builder)->post_http(serverInfo);
 

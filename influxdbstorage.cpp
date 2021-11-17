@@ -23,7 +23,7 @@ InfluxDBStorage::~InfluxDBStorage(){
         storeThread.get();
 
         // Push the unstored Data
-        pushData(serverInfo, builder_work);
+        pushData(serverInfo, *builder_work);
     }
     catch(const std::exception& e) {
         delete builder_work;
@@ -104,11 +104,11 @@ void InfluxDBStorage::store(const std::__cxx11::string& measurementName, const s
         // std::launch::async   : The thread starts immideatly
         // std::ref             : The parameters would be copied otherwise
         // true                 : The 'builder_store' pointer will be deleted from the thread after function run
-        storeThread = std::async(std::launch::async, pushData, std::ref(serverInfo), std::ref(builder_store), true);
+        storeThread = std::async(std::launch::async, &pushData, std::ref(serverInfo), std::ref(builder_store), true);
     }
 }
 
-void InfluxDBStorage::pushData(influxdb_cpp::server_info& serverInfo, influxdb_cpp::builder& builder) {
+void InfluxDBStorage::pushData(influxdb_cpp::server_info& serverInfo, influxdb_cpp::builder& builder, bool deleteBuilder) {
 
     ((influxdb_cpp::detail::field_caller*)&builder)->post_http(serverInfo);
 

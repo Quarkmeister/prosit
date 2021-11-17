@@ -17,6 +17,7 @@ Sensor::Sensor(string identifier, TimeLineStorage* timeLineStorage, unsigned int
 
 void Sensor::measure(string measurementIdentifier){
 
+    // This routine ensafes that the maximum read frequency of the sensor isnt exceed
     auto timePointNow = std::chrono::time_point_cast<std::chrono::nanoseconds>(std::chrono::high_resolution_clock::now());
     
     if(duration_cast<nanoseconds>(timePointNow-timeOfLastMeasure).count() > maxSamplingPeriod){

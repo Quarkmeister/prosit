@@ -31,7 +31,7 @@ int main(int argc, char *argv[]){
     InfluxDBStorage storage("StudHSKe", "prosit", "wXrijWpcGjt_xjBitTOXPUOqXAxJXtfnanjIOiHklGMiEUNFZxhbeSoh-AtUt3tHLqnCz31XuwIoVhNf14CRqg==","measNr=0");
 
     // Instanziate the sensors.
-    ADXL345 lba("Sensor1", ((TimeLineStorage *) &storage), 3200, 0);
+    ADXL345 lba("Sensor1", ((TimeLineStorage *) &storage), 3000, 0);
 
 
     // Print the measure identifier
@@ -57,11 +57,9 @@ int main(int argc, char *argv[]){
 
     }
 
-    storage.~InfluxDBStorage();
-
-    string pdToCSV_FNE = "./PDToCsv.py";
-    string pdToCSV_cmd = "python3 " + pdToCSV_FNE + " '" + measurementIdentifier + "%" + message + "'";
-    system(pdToCSV_cmd.c_str());
+    // string pdToCSV_FNE = "./PDToCsv.py";
+    // string pdToCSV_cmd = "python3 " + pdToCSV_FNE + " '" + measurementIdentifier + "%" + message + "'";
+    // system(pdToCSV_cmd.c_str());
 }
 
 bool process_command_line(int argc, char** argv, float& timeSpan, string& message){

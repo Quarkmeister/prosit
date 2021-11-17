@@ -6,16 +6,18 @@ using std::string;
 
 #include "adxl345.h"
 
-// Power consumption Settings
-#define POWER_MODES_KEY     0x2C
-#define POWER_MODE_VALUE    0x0F
+#include <bitset>
 
-#define STANDBY_MODE_KEY    0x2D
-#define STANDBY_MODE_VALUE  0x08
+// Power consumption Settings
+#define POWER_MODES_KEY     0x2C // BW_RATE
+#define POWER_MODE_VALUE    0b00001111
+
+#define STANDBY_MODE_KEY    0x2D // POWER_CTL
+#define STANDBY_MODE_VALUE  0b00001000
 
 // General Settings
 #define DATA_FORMAT_KEY     0x31
-#define DATA_FORMAT_VALUE   0x0B
+#define DATA_FORMAT_VALUE   0b00001011
 
 
 ADXL345::ADXL345(string identifier, TimeLineStorage* timeLineStorage, unsigned int maxSamplingFrequenzy, int spiChannel) 
@@ -24,8 +26,9 @@ ADXL345::ADXL345(string identifier, TimeLineStorage* timeLineStorage, unsigned i
 
     accelerationConversionFactor = 2 * 16.0 / 8192.0;
 }
-void ADXL345::initialiseTheSensor(){
-    char data[] = {POWER_MODE_VALUE, POWER_MODES_KEY};
+void ADXL345::initialiseTheSensor()
+{
+    char data[] = {POWER_MODES_KEY, POWER_MODE_VALUE};
     sendBytes(data, 2);
 
     data[0] = STANDBY_MODE_KEY;

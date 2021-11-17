@@ -9,7 +9,7 @@ my_org = "StudHSKe"
 bucket = "prosit"
 client = InfluxDBClient(url="http://127.0.0.1:8086", token=my_token, org=my_org, debug=False)
 
-# print(f'arg0: {sys.argv[0]}')
+print("write data in file...")
 # print(f'arg1: {sys.argv[1]}')
 
 query= f'''

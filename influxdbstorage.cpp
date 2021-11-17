@@ -10,35 +10,65 @@ using std::string;
 #include "influxdbstorage.h"
 
 InfluxDBStorage::InfluxDBStorage(string organisationName, string bucket, string token, string tags) 
-    : serverInfo("127.0.0.1", 8086, organisationName, token, bucket), storeThread{}{
+    : serverInfo("127.0.0.1", 8086, organisationName, token, bucket){
 
     builder_work = new influxdb_cpp::builder{};
     builderInitialised = false;
+    builderStoreInitialised = false;
+
+    threadInitialized = false;
 }
 
 InfluxDBStorage::~InfluxDBStorage(){
 
     try {
-        // Waits till the thread finishes
-        storeThread.get();
 
-        // Push the unstored Data
-        pushData(serverInfo, *builder_work);
+        if(threadInitialized){
+
+            // Waits till the thread finishes
+            try
+            {
+                storeThread.get();
+            } 
+            catch(const std::future_error& e)
+            {
+
+            } 
+        }
+
+        if(builderInitialised){
+
+            // Push the unstored Data
+            pushData(serverInfo, *builder_work);
+        }
     }
-    catch(const std::exception& e) {
-        delete builder_work;
-        builder_work = nullptr;
+    catch(const std::exception& e) 
+    {
+        // delete builder_work;
+        // builder_work = nullptr;
 
-        delete builder_store;
-        builder_store = nullptr;
+        // if(builderStoreInitialised){
 
+        //     delete builder_store;
+        //     builder_store = nullptr;
+        //     builderStoreInitialised = false;
+        // } 
+
+        std::cout << "InfluxDBStorage::~InfluxDBStorage(): " << e.what() << std::endl;
+
+        // Destructor is defined as 'noexcept'
         //throw e;
     }
+
     delete builder_work;
     builder_work = nullptr;
 
-    delete builder_store;
-    builder_store = nullptr;
+    if (builderStoreInitialised)
+    {
+        delete builder_store;
+        builder_store = nullptr;
+        builderStoreInitialised = false;
+    }
 }
 
 void InfluxDBStorage::store(const std::__cxx11::string& measurementName, const string& fieldName, const string& fieldValue){
@@ -94,26 +124,31 @@ void InfluxDBStorage::store(const std::__cxx11::string& measurementName, const s
     // from the database routines.
     fieldCaller->timestamp(timestamp);
 
-    // Check if the store thread finished it´s work. If it´s finished a new thread is initalized and a new builder_work 
+    // Check if the store thread finished itï¿½s work. If itï¿½s finished a new thread is initalized and a new builder_work 
     // is been created.
-    if (storeThread.wait_for(std::chrono::seconds(0)) == std::future_status::ready) {
+    if (!threadInitialized || storeThread.wait_for(std::chrono::seconds(0)) == std::future_status::ready) {
 
         builder_store = builder_work;
+        builderStoreInitialised = true;
         renewBuilderWork();
 
         // std::launch::async   : The thread starts immideatly
         // std::ref             : The parameters would be copied otherwise
         // true                 : The 'builder_store' pointer will be deleted from the thread after function run
         storeThread = std::async(std::launch::async, &pushData, std::ref(serverInfo), std::ref(*builder_store), true);
+        builderStoreInitialised = false; // builder_store is automatically deleted in the function
+        threadInitialized = true;
     }
 }
 
-void InfluxDBStorage::pushData(influxdb_cpp::server_info& serverInfo, influxdb_cpp::builder& builder, bool deleteBuilder) {
+bool InfluxDBStorage::pushData(influxdb_cpp::server_info& serverInfo, influxdb_cpp::builder& builder, bool deleteBuilder) {
 
     ((influxdb_cpp::detail::field_caller*)&builder)->post_http(serverInfo);
 
-    if (deleteBuilder)
+    if (deleteBuilder){
         delete &builder;
+    } 
+    return true;
 }
 
 void InfluxDBStorage::renewBuilderWork() {

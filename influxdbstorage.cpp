@@ -124,9 +124,12 @@ void InfluxDBStorage::store(const std::__cxx11::string& measurementName, const s
     // from the database routines.
     fieldCaller->timestamp(timestamp);
 
+    // To garuantee an efficient batch write from the beginning
+    static unsigned long functionPasses = -1;
+
     // Check if the store thread finished it�s work. If it�s finished a new thread is initalized and a new builder_work 
     // is been created.
-    if (!threadInitialized || storeThread.wait_for(std::chrono::seconds(0)) == std::future_status::ready) {
+    if (++functionPasses > 500 && (!threadInitialized || storeThread.wait_for(std::chrono::seconds(0)) == std::future_status::ready)) {
 
         builder_store = builder_work;
         builderStoreInitialised = true;

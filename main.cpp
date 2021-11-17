@@ -5,7 +5,6 @@ using std::string;
 #include <sys/time.h>
 #include "adxl345.h"
 #include "influxdbstorage.h"
-//#include <argparse/include/argparse/argparse.hpp> //https://github.com/p-ranav/argparse
 #include <stdio.h>
 #include <stdlib.h>
 #include <chrono>

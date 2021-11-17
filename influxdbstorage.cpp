@@ -23,7 +23,7 @@ InfluxDBStorage::~InfluxDBStorage(){
         storeThread.get();
 
         // Push the unstored Data
-        pushData(builder_work);
+        pushData(serverInfo, builder_work);
     }
     catch(const std::exception& e) {
         delete builder_work;
@@ -32,7 +32,7 @@ InfluxDBStorage::~InfluxDBStorage(){
         delete builder_store;
         builder_store = nullptr;
 
-        throw e;
+        //throw e;
     }
     delete builder_work;
     builder_work = nullptr;

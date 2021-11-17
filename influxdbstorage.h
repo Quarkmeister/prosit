@@ -31,7 +31,7 @@ class InfluxDBStorage : protected TimeLineStorage
         void renewBuilderWork();
 
         std::future<void> storeThread;
-        static void pushData(influxdb_cpp::server_info serverInfo, influxdb_cpp::builder* builder, bool deleteBuilder = false);
+        static void pushData(influxdb_cpp::server_info* serverInfo, influxdb_cpp::builder* builder, bool deleteBuilder = false);
 };
 
 #endif
